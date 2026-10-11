@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Parser AI - Semantic Screening Dashboard</title>
+    <meta name="description" content="An advanced AI-powered resume parser and screening tool that uses NLP, word embeddings, and skill clustering to evaluate candidates contextually and prevent keyword stuffing.">
+    <!-- Google Fonts: Lora (Serif) & Outfit (Sans-Serif) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..600;1,400..600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Background glowing decorative orbs -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <div class="app-container">
+        <!-- Top Navigation / Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-brain-circuit"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Resume Parser <span class="badge-ai">AI</span></h1>
+                    <p>Semantic Screening & Skill Clustering Engine</p>
+                </div>
+            </div>
+            <nav class="app-nav">
+                <button id="nav-btn-parser" class="nav-link active" onclick="switchTab('parser')">
+                    <i class="fa-solid fa-file-invoice"></i> Resume Screener
+                </button>
+                <button id="nav-btn-encyclopedia" class="nav-link" onclick="switchTab('encyclopedia')">
+                    <i class="fa-solid fa-database"></i> Domain Encyclopedia
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="app-main">
+            <!-- Screen 1: Resume Parser (Screener) -->
+            <section id="tab-parser" class="tab-content active">
+                <div class="screener-grid">
+                    <!-- Left: Inputs -->
+                    <div class="card input-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-sliders"></i>
+                            <h2>Screening Configuration</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="category-select">Target Position / Domain</label>
+                                <div class="select-wrapper">
+                                    <select id="category-select">
+                                        <option value="" disabled selected>Loading available positions...</option>
+                                    </select>
+                                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                                </div>
+                                <span class="help-text">The parser will score the candidate based on semantic clusters trained for this role.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="label-row">
+                                    <label for="resume-text">Resume Text</label>
+                                    <button class="btn-text-only" onclick="insertSampleResume()">
+                                        <i class="fa-solid fa-lightbulb"></i> Load Sample Resume
+                                    </button>
+                                </div>
+                                <div class="textarea-wrapper">
+                                    <textarea id="resume-text" placeholder="Paste the candidate's resume text, or load a sample resume..." rows="12"></textarea>
+                                </div>
+                                <div class="word-count-badge" id="word-counter">0 words</div>
+                            </div>
+
+                            <button id="btn-analyze" class="btn btn-primary btn-block" onclick="analyzeResume()">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Candidate
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Results Panel -->
+                    <div class="results-container">
+                        <!-- Idle State -->
+                        <div id="results-idle" class="card idle-card text-center">
+                            <div class="idle-graphics">
+                                <div class="pulse-ring"></div>
+                                <i class="fa-solid fa-magnifying-glass-chart idle-icon"></i>
+                            </div>
+                            <h3>Awaiting Analysis</h3>
+                            <p>Select a job position and paste the candidate's resume on the left, then click <strong>Analyze Candidate</strong> to generate the semantic screening profile.</p>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div id="results-loading" class="card loading-card text-center hidden">
+                            <div class="scanner">
+                                <div class="scan-line"></div>
+                                <i class="fa-solid fa-file-lines doc-icon"></i>
+                            </div>
+                            <h3>Scanning & Context Mapping...</h3>
+                            <p>NLTK is pre-processing tokens, checking lexical density, and mapping words to skill clusters using Word2Vec semantic vectors.</p>
+                        </div>
+
+                        <!-- Results State -->
+                        <div id="results-data" class="hidden">
+                            <!-- Score Banner Card -->
+                            <div class="card score-card">
+                                <div class="score-card-layout">
+                                    <div class="score-circle-container">
+                                        <svg class="score-svg" viewBox="0 0 100 100">
+                                            <circle class="score-bg-ring" cx="50" cy="50" r="40"></circle>
+                                            <circle class="score-fill-ring" id="score-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                                        </svg>
+                                        <div class="score-text-overlay">
+                                            <span class="score-number" id="score-num">0.0</span>
+                                            <span class="score-max">/ 10</span>
+                                        </div>
+                                    </div>
+                                    <div class="score-status-details">
+                                        <div class="status-badge" id="status-badge">Good Match</div>
+                                        <h3 class="status-title" id="status-title">Candidate Evaluation</h3>
+                                        <p class="status-description" id="status-feedback">Analysis details will populate here.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Metrics & Warnings Grid -->
+                            <div class="metrics-grid">
+                                <div class="metric-mini-card">
+                                    <div class="metric-mini-header">
+                                        <span>Semantic Overlap</span>
+                                        <i class="fa-solid fa-arrows-split-up-and-left"></i>
+                                    </div>
+                                    <div class="metric-mini-val" id="metric-overlap">0%</div>
+                                    <div class="metric-mini-bar-container">
+                                        <div class="metric-mini-bar" id="bar-overlap" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="metric-mini-card">
+                                    <div class="metric-mini-header">
+                                        <span>Cluster Coverage</span>
+                                        <i class="fa-solid fa-layer-group"></i>
+                                    </div>
+                                    <div class="metric-mini-val" id="metric-coverage">0%</div>
+                                    <div class="metric-mini-bar-container">
+                                        <div class="metric-mini-bar" id="bar-coverage" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="metric-mini-card" id="keyword-stuffing-card">
+                                    <div class="metric-mini-header">
+                                        <span>Spam Penalty</span>
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                    </div>
+                                    <div class="metric-mini-val" id="metric-penalty">0.0</div>
+                                    <div class="metric-mini-bar-container">
+                                        <div class="metric-mini-bar penalty" id="bar-penalty" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Warnings Panel -->
+                            <div id="warnings-panel" class="warning-panel hidden">
+                                <div class="warning-header">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                    <span>Keyword Stuffing Warnings Detected</span>
+                                </div>
+                                <ul id="warnings-list" class="warning-list">
+                                    <!-- Populated dynamically -->
+                                </ul>
+                            </div>
+
+                            <!-- Skill Cluster Breakdown -->
+                            <div class="card cluster-breakdown-card">
+                                <div class="card-header">
+                                    <i class="fa-solid fa-diagram-project"></i>
+                                    <h2>Semantic Skill Clusters Match</h2>
+                                </div>
+                                <div class="card-body">
+                                    <p class="section-helper">Recruiters are penalised for keyword lists. AI groups domain skills into contextual dimensions. See the matches below:</p>
+                                    <div class="clusters-accordion" id="clusters-accordion">
+                                        <!-- Populated dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Semantic Mapping Table -->
+                            <div class="card semantic-mapping-card">
+                                <div class="card-header">
+                                    <i class="fa-solid fa-compress"></i>
+                                    <h2>Semantic Fit Table (Words Close In Context)</h2>
+                                </div>
+                                <div class="card-body">
+                                    <p class="section-helper">The following words in the resume were not exact keyword matches, but the AI recognized them as contextually similar to target skills (Word2Vec Cosine Similarity &gt; 70%):</p>
+                                    <div class="table-container">
+                                        <table class="semantic-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Domain Skill Required</th>
+                                                    <th>Candidate's Contextual Word</th>
+                                                    <th>Match Strength</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="semantic-table-body">
+                                                <!-- Populated dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen 2: Domain Encyclopedia -->
+            <section id="tab-encyclopedia" class="tab-content hidden">
+                <div class="encyclopedia-layout">
+                    <div class="card info-wide-card">
+                        <div class="card-body flex-header-layout">
+                            <div>
+                                <h2>AI Domain Encyclopedia</h2>
+                                <p>Select any job profile from the dropdown below to explore the semantic skill clusters that the AI has learned from the training corpus of 960+ resumes.</p>
+                            </div>
+                            <div class="form-group select-inline-group">
+                                <div class="select-wrapper">
+                                    <select id="encyclopedia-select" onchange="loadEncyclopediaDetails()">
+                                        <option value="" disabled selected>Select Position...</option>
+                                    </select>
+                                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading / Details placeholder -->
+                    <div id="encyclopedia-idle" class="card idle-card text-center">
+                        <i class="fa-solid fa-arrow-pointer idle-icon"></i>
+                        <h3>Select a Position</h3>
+                        <p>Choose a position from the dropdown menu to inspect the AI's training clusters, showing the semantic groupings of keywords and tools.</p>
+                    </div>
+
+                    <!-- Details Area -->
+                    <div id="encyclopedia-details" class="hidden">
+                        <!-- Top words list -->
+                        <div class="card top-words-card">
+                            <div class="card-header">
+                                <i class="fa-solid fa-ranking-star"></i>
+                                <h2>Top Domain Terms (TF-IDF Weighting)</h2>
+                            </div>
+                            <div class="card-body">
+                                <p class="section-helper">These are the words that characterize resumes in this category, weighted by term importance.</p>
+                                <div id="top-words-tags" class="tag-container">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cluster Grid -->
+                        <div class="cluster-grid-header">
+                            <i class="fa-solid fa-network-wired"></i>
+                            <h2>AI-Clustered Skills Matrix (Semantic Groups)</h2>
+                        </div>
+                        <div class="cluster-matrix-grid" id="encyclopedia-cluster-grid">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 Resume Parser AI Project. Powered by Python, Flask, Word2Vec, and NLTK.</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
